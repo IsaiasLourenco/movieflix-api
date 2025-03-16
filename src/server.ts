@@ -54,7 +54,7 @@ app.post("/movies", async (req, res) => {
         });
 
         if (movieWithSameTitle) {
-            return res.status(409).send({ message: "Já existe um filme cadastrado com esse título" });
+            res.status(409).send({ message: "Já existe um filme cadastrado com esse título" });
         }
 
         await prisma.movie.create({
@@ -67,7 +67,7 @@ app.post("/movies", async (req, res) => {
             }
         });
     } catch (error) {
-        return res.status(500).send({ message: "Falha ao cadastrar filme: ", error })
+        res.status(500).send({ message: "Falha ao cadastrar filme: ", error })
     }
 
     res.status(201).send();
@@ -85,7 +85,7 @@ app.put("/movies/:id", async (req, res) => {
         }
     });
     if(!movie){
-        return res.status(404).send({ message: "Filme não encontrado!" });
+        res.status(404).send({ message: "Filme não encontrado!" });
     }
 
     const data = { ...req.body }
@@ -99,10 +99,31 @@ app.put("/movies/:id", async (req, res) => {
         data: data
     });
 } catch (error) {
-    return res.status(500).send({ message: "Falha ao atualizar o registro do filme!", error })
+    res.status(500).send({ message: "Falha ao atualizar o registro do filme!", error })
 }
     // retornar o status correto informando que o filme foi atualizado
     res.status(200).send();
+});
+
+app.delete("/movies/:id", async (req, res) => {
+    const id = Number(req.params.id);
+
+    try {
+    const movie = await prisma.movie.findUnique({ where: { id } });
+
+    if (!movie) {
+        res.status(404).send ({ message: "Filme não encontrado!!" });    
+    }
+
+    await prisma.movie.delete({ 
+        where: {
+            id 
+        }
+    });
+    } catch (error) {
+        res.status(500).send({ message: "Não foi possível remover o filme: ", error });
+    }
+    res.status(200).send({ message: "Filme deletado" });
 })
 
 app.listen(port, () => {
