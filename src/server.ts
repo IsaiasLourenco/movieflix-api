@@ -44,7 +44,19 @@ app.get("/movies-view", async (_, res) => {
 app.post("/movies", async (req, res) => {
     const { title, genre_id, language_id, oscar_count, release_date } = req.body;
 
-        try {
+    try {
+
+        //Verificar no banco se já existe um filme com o nome que já está sendo enviado
+        // case insensitive - não faz match se tiver maiúsculas ou minúsculas
+        // case senssitive - o contrário de case insensitive
+        const movieWithSameTitle = await prisma.movie.findFirst({
+            where: { title: { equals: title, mode: "insensitive" } },
+        });
+
+        if (movieWithSameTitle) {
+            return res.status(409).send({ message: "Já existe um filme cadastrado com esse título" });
+        }
+
         await prisma.movie.create({
             data: {
                 title,
@@ -54,12 +66,12 @@ app.post("/movies", async (req, res) => {
                 release_date: new Date(release_date)
             }
         });
-    } catch(error) {
+    } catch (error) {
         return res.status(500).send({ message: "Falha ao cadastrar filme: ", error })
     }
-        
+
     res.status(201).send();
-    
+
 });
 
 app.put("/movies/:id", async (req, res) => {
@@ -71,7 +83,7 @@ app.put("/movies/:id", async (req, res) => {
             id
         },
         data: {
-            release_date: new Date (req.body.release_date)
+            release_date: new Date(req.body.release_date)
         }
     })
     // retornar o status correto informando que o filme foi atualizado
