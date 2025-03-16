@@ -37,13 +37,12 @@ model Movie {
 }
 
 model TitleLanguageGenre {
-  id Int
-  title String
-  release_data DateTime
+  id          Int    @id
+  title       String
+  language    String
+  genre       String
   oscar_count Int
-  language_name String
-  genre_name String
 
-  @@ignore //Evita que o prisma tente gerenciar essa View
-  @@map("title_language_genre") //Nome real da view no banco
+  @@ignore
+  @@map("title_language_genre") // Nome da view no banco
 }
