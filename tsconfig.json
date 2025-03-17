@@ -1,21 +1,25 @@
 {
   "compilerOptions": {
     /* Language and Environment */
-    "target": "es2019",                              /* Define a versão do JavaScript para o código emitido. */
+    "target": "es2019",           /* Define a versão do JavaScript para o código emitido. */
 
     /* Modules */
-    "module": "commonjs",                            /* Define o tipo de módulo gerado (CommonJS). */
-    "moduleResolution": "node",                     /* Garante a resolução de módulos no estilo Node.js. */
+    "module": "commonjs",                            /* Define o tipo de módulo gerado */
+    "rootDir": "./",             /* Specify the root folder within your source code are */
+    "outDir": "./dist",              /* Specify the output folder for all the emitted files */
+    /*(CommonJS). */
+    "moduleResolution": "node",    /* Garante a resolução de módulos no estilo Node.js. */
 
     /* Interoperabilidade */
-    "esModuleInterop": true,                         /* Suporte para importação de módulos CommonJS. */
-    "resolveJsonModule": true,                       /* Permite importar arquivos JSON diretamente. */
+    "esModuleInterop": true,             /* Suporte para importação de módulos CommonJS. */
+    "resolveJsonModule": true,             /* Permite importar arquivos JSON diretamente. */
 
     /* Type Checking */
-    "strict": true,                                  /* Habilita todas as opções de verificação estrita. */
-    "forceConsistentCasingInFileNames": true,        /* Garante consistência de maiúsculas e minúsculas nos caminhos de importação. */
-    "skipLibCheck": true                             /* Ignora a verificação de tipos em arquivos .d.ts. */
+    "strict": true,                   /* Habilita todas as opções de verificação estrita. */
+    "forceConsistentCasingInFileNames": true, /* Garante consistência maiúsculas minúsculas caminhos importação. */
+    "skipLibCheck": true             /* Ignora a verificação de tipos em arquivos .d.ts. */
   },
-  "include": ["src/**/*"],                           /* Inclui todos os arquivos na pasta src. */
-  "exclude": ["node_modules"]                        /* Exclui a pasta node_modules. */
+
+  "include": ["src", "swagger.json"],           /* Inclui todos os arquivos na pasta src. */
+  "exclude": ["node_modules"]                   /* Exclui a pasta node_modules. */
 }
