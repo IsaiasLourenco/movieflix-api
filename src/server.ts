@@ -2,12 +2,15 @@ import express from "express";
 // import { Request, Response, Application } from "express";
 import { PrismaClient, Prisma } from "@prisma/client";
 import { TitleLanguageGenre } from "../prisma/types";
+import swaggerUi from "swagger-ui-express";
+import swaggerDocument from "../swagger.json"
 
 const port = 3000;
 const app = express();
 const prisma = new PrismaClient();
 
 app.use(express.json());
+app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.get("/", (req, res) => {
     res.send("Home Page");
