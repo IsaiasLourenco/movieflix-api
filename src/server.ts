@@ -4,10 +4,17 @@ import { PrismaClient, Prisma } from "@prisma/client";
 import { TitleLanguageGenre } from "../prisma/types";
 import swaggerUi from "swagger-ui-express";
 import swaggerDocument from "../swagger.json"
+import cors from "cors";
 
 const port = 3000;
 const app = express();
 const prisma = new PrismaClient();
+
+// Configuração do CORS
+app.use(cors({ origin: "http://localhost:3000" })); // Substitua pela origem correta do seu front-end
+
+app.use(express.json());
+app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.use(express.json());
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
