@@ -79,28 +79,28 @@ app.put("/movies/:id", async (req, res) => {
     const id = Number(req.params.id);
 
     try {
-    const movie = await prisma.movie.findUnique({
-        where: {
-            id
+        const movie = await prisma.movie.findUnique({
+            where: {
+                id
+            }
+        });
+        if (!movie) {
+            res.status(404).send({ message: "Filme não encontrado!" });
         }
-    });
-    if(!movie){
-        res.status(404).send({ message: "Filme não encontrado!" });
-    }
 
-    const data = { ...req.body }
-    data.release_date = data.release_date ? new Date(data.release_date) : undefined;
-    
-    //pegar os dados do filme que vai ser atualizado
-    await prisma.movie.update({
-        where: {
-            id
-        },
-        data: data
-    });
-} catch (error) {
-    res.status(500).send({ message: "Falha ao atualizar o registro do filme!", error })
-}
+        const data = { ...req.body }
+        data.release_date = data.release_date ? new Date(data.release_date) : undefined;
+
+        //pegar os dados do filme que vai ser atualizado
+        await prisma.movie.update({
+            where: {
+                id
+            },
+            data: data
+        });
+    } catch (error) {
+        res.status(500).send({ message: "Falha ao atualizar o registro do filme!", error })
+    }
     // retornar o status correto informando que o filme foi atualizado
     res.status(200).send();
 });
@@ -109,22 +109,83 @@ app.delete("/movies/:id", async (req, res) => {
     const id = Number(req.params.id);
 
     try {
-    const movie = await prisma.movie.findUnique({ where: { id } });
+        const movie = await prisma.movie.findUnique({ where: { id } });
 
-    if (!movie) {
-        res.status(404).send ({ message: "Filme não encontrado!!" });    
-    }
-
-    await prisma.movie.delete({ 
-        where: {
-            id 
+        if (!movie) {
+            res.status(404).send({ message: "Filme não encontrado!!" });
         }
-    });
+
+        await prisma.movie.delete({
+            where: {
+                id
+            }
+        });
     } catch (error) {
         res.status(500).send({ message: "Não foi possível remover o filme: ", error });
     }
     res.status(200).send({ message: "Filme deletado" });
-})
+});
+
+app.get("/movies/:genreName", async (req, res) => {
+    //receber o ome do gênero pelos parâmetros da rota
+    try {
+        //filtrar os filmes do banco pelo gênero
+        const moviesFilteredByGenreName = await prisma.movie.findMany({
+            include: {
+                genres: true,
+                languages: true
+            },
+            where: {
+                genres: {
+                    name: {
+                        equals: req.params.genreName,
+                        mode: "insensitive"
+                    }
+                }
+            }
+        });
+
+        if (moviesFilteredByGenreName.length === 0) {
+            res.status(404).send({ message: "Gênero não encontrado!!" });
+            return;
+        }        
+
+        //retornar os filmes filtrados na resposta da rota
+        res.status(200).send(moviesFilteredByGenreName);
+    } catch (error) {
+        res.status(500).send({ message: "Falha ao filtrar filmes por gênero!: ", error })
+    }
+});
+
+app.get("/movies-view/:genreName", async (req, res) => {
+    try {
+        const genreName = req.params.genreName;
+
+        // Consulta SQL diretamente na view, com filtro pelo nome do gênero
+        const moviesByGenre: TitleLanguageGenre[] = await prisma.$queryRaw<
+            TitleLanguageGenre[]
+        >(Prisma.sql`
+            SELECT * 
+            FROM title_language_genre
+            WHERE genre_name ILIKE ${genreName} 
+            ORDER BY id ASC
+        `);
+
+        // Validar se encontrou filmes
+        if (moviesByGenre.length === 0) {
+            res.status(404).send({ message: "Gênero não encontrado!!" });
+            return;
+        }
+
+        // Retornar os filmes filtrados
+        res.json(moviesByGenre);
+    } catch (error) {
+        console.error("Erro ao consultar a view com filtro:", error);
+        res.status(500).json({ error: "Erro interno do servidor" });
+    }
+});
+
+
 
 app.listen(port, () => {
     console.log(`Servidor em execução na porta ${port}`);
