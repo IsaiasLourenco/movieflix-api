@@ -196,13 +196,18 @@ app.get("/movies-view/:genreName", async (req, res) => {
 });
 
 app.get("/genres", async (_, res) => {
-    const genres = await prisma.genre.findMany({
-        orderBy: {
-            id: "asc",
-        },
+    try {
+        const genres = await prisma.genre.findMany({
+            orderBy: {
+                id: "asc",
+            },
 
-    });
-    res.json(genres)
+        });
+        res.json(genres)
+    } catch (error) {
+        console.error(error);
+        res.status(500).send({ message: "Houve um problema ao buscar os gêneros." });
+    }
 });
 
 app.put("/genres/:id", async (req, res) => {
@@ -249,33 +254,54 @@ app.put("/genres/:id", async (req, res) => {
 
 app.post("/genres", async (req, res) => {
     const { name } = req.body;
-  
-    if(!name) {
+
+    if (!name) {
         return res.status(400).send({ message: "O nome do gênero é obrigatório." });
     }
-  
+
     try {
         // Verificar se o gênero já existe (ignorando maiúsculas e minúsculas)
         const existingGenre = await prisma.genre.findFirst({
             where: { name: { equals: name, mode: "insensitive" } }
         });
-  
+
         if (existingGenre) {
             return res.status(409).send({ message: "Esse gênero já existe." });
         }
-  
+
         const newGenre = await prisma.genre.create({
             data: {
                 name
             }
         });
-  
+
         res.status(201).json(newGenre);
     } catch (error) {
         console.error(error);
         res.status(500).send({ message: "Houve um problema ao adicionar o novo gênero." });
     }
-  });
+});
+
+app.delete("/genres/:id", async (req, res) => {
+    const id = Number(req.params.id);
+
+    try {
+        const genre = await prisma.genre.findUnique({ where: { id } });
+
+        if (!genre) {
+            res.status(404).send({ message: "Gênero não encontrado!!" });
+        }
+
+        await prisma.genre.delete({
+            where: {
+                id
+            }
+        });
+    } catch (error) {
+        res.status(500).send({ message: "Não foi possível remover o gênero: ", error });
+    }
+    res.status(200).send({ message: "Gênero deletado" });
+});
 
 app.listen(port, () => {
     console.log(`Servidor em execução na porta ${port}`);
