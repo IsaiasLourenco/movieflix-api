@@ -29,8 +29,10 @@ model Movie {
   title        String?    @db.VarChar(100)
   release_date DateTime?  @db.Date
   genre_id     Int?
+  director     String
   language_id  Int?
   oscar_count  Int?
+  duration     Int
   genres       Genre?    @relation(fields: [genre_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_genre")
   languages    Language? @relation(fields: [language_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_language")
 
@@ -43,6 +45,8 @@ model TitleLanguageGenre {
   language    String
   genre       String
   oscar_count Int
+  director    String
+  duration    Int
 
   @@ignore
   @@map("title_language_genre") // Nome da view no banco

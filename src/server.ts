@@ -1,5 +1,4 @@
-import express from "express";
-// import { Request, Response, Application } from "express";
+import express, { Application, Request, Response } from 'express';
 import { PrismaClient, Prisma } from "@prisma/client";
 import { TitleLanguageGenre } from "../prisma/types";
 import swaggerUi from "swagger-ui-express";
@@ -7,7 +6,7 @@ import swaggerDocument from "../swagger.json"
 import cors from "cors";
 
 const port = 3000;
-const app = express();
+const app: Application = express(); // Defina explicitamente o tipo de app
 const prisma = new PrismaClient();
 
 // Configuração do CORS
@@ -24,16 +23,37 @@ app.get("/", (req, res) => {
 });
 
 app.get("/movies", async (_, res) => {
-    const movies = await prisma.movie.findMany({
-        orderBy: {
-            id: "asc",
-        },
-        include: {
-            genres: true,
-            languages: true
+    try {
+        const movies = await prisma.movie.findMany({
+            orderBy: {
+                id: "asc",
+            },
+            include: {
+                genres: true,
+                languages: true
+            }
+        });
+
+        // Cálculo da quantidade total de filmes
+        const totalMovies = movies.length;
+
+        // Cálculo da média de duração dos filmes
+        let totalDuration = 0;
+        for (const movie of movies) {
+            totalDuration += movie.duration
         }
-    });
-    res.json(movies)
+        const averageDuration = totalMovies > 0 ? totalDuration / totalMovies : 0;
+
+        res.json({
+            totalMovies,
+            averageDuration,
+            movies,
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).send({ message: "Houve um problema ao buscar os filmes." });
+    }
 });
 
 app.get("/movies-view", async (_, res) => {
@@ -42,6 +62,22 @@ app.get("/movies-view", async (_, res) => {
         const moviesView: TitleLanguageGenre[] = await prisma.$queryRaw<
             TitleLanguageGenre[]
         >(Prisma.sql`SELECT * FROM title_language_genre ORDER BY id ASC`);
+
+        // Cálculo da quantidade total de filmes
+        const totalMovies = moviesView.length;
+
+        // Cálculo da média de duração dos filmes
+        let totalDuration = 0;
+        for (const movie of moviesView) {
+            totalDuration += movie.duration
+        }
+        const averageDuration = totalMovies > 0 ? totalDuration / totalMovies : 0;
+
+        res.json({
+            totalMovies,
+            averageDuration,
+            moviesView,
+        });
 
         // Respondendo com os dados como JSON
         res.json(moviesView);
@@ -52,7 +88,7 @@ app.get("/movies-view", async (_, res) => {
 });
 
 app.post("/movies", async (req, res) => {
-    const { title, genre_id, language_id, oscar_count, release_date } = req.body;
+    const { title, genre_id, language_id, oscar_count, release_date, director, duration } = req.body;
 
     try {
 
@@ -73,7 +109,9 @@ app.post("/movies", async (req, res) => {
                 genre_id,
                 language_id,
                 oscar_count,
-                release_date: new Date(release_date)
+                release_date: new Date(release_date),
+                director,
+                duration
             }
         });
     } catch (error) {
@@ -252,7 +290,7 @@ app.put("/genres/:id", async (req, res) => {
     }
 });
 
-app.post("/genres", async (req, res) => {
+app.post("/genres", async (req: Request, res: Response) => {
     const { name } = req.body;
 
     if (!name) {
@@ -275,10 +313,10 @@ app.post("/genres", async (req, res) => {
             }
         });
 
-        res.status(201).json(newGenre);
+        return res.status(201).send({ message: "Novo gênero cadastrado com sucesso!", newGenre });
     } catch (error) {
         console.error(error);
-        res.status(500).send({ message: "Houve um problema ao adicionar o novo gênero." });
+        return res.status(500).send({ message: "Houve um problema ao adicionar o novo gênero." });
     }
 });
 

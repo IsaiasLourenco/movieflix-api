@@ -5,5 +5,7 @@ export type TitleLanguageGenre = {
     oscar_count: number | null;
     language_name: string;
     genre_name: string;
+    director:    string;
+    duration:    number;
   };
   
