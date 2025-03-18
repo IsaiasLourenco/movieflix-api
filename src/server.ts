@@ -85,7 +85,7 @@ app.post("/movies", async (req, res) => {
 });
 
 app.put("/movies/:id", async (req, res) => {
-    //pegar o id do registro que vai ser atualziado
+    //pegar o id do registro que vai ser atualizado
     const id = Number(req.params.id);
 
     try {
@@ -137,7 +137,7 @@ app.delete("/movies/:id", async (req, res) => {
 });
 
 app.get("/movies/:genreName", async (req, res) => {
-    //receber o ome do gênero pelos parâmetros da rota
+    //receber o nome do gênero pelos parâmetros da rota
     try {
         //filtrar os filmes do banco pelo gênero
         const moviesFilteredByGenreName = await prisma.movie.findMany({
@@ -195,6 +195,57 @@ app.get("/movies-view/:genreName", async (req, res) => {
     }
 });
 
+app.get("/genres", async (_, res) => {
+    const genres = await prisma.genre.findMany({
+        orderBy: {
+            id: "asc",
+        },
+        
+    });
+    res.json(genres)
+});
+
+app.put("/genres/:id", async (req, res) => {
+    const { id } = req.params;
+    const { name } = req.body;
+
+    if (!name) {
+        res.status(400).send({ message: "O nome do gênero é obrigatório!" });
+    }
+    
+    try {
+        // Verificando se o gênero existe
+        const genre = await prisma.genre.findUnique({
+            where: { id: Number(id) },
+        });
+
+        if (!genre) {
+            res.status(404).send({ message: "Gênero não encontradp!" });
+        }   
+
+        const existingGenre = await prisma.genre.findFirst({
+            where: { 
+                name: { equals: name, mode: "insensitive" },
+                id: { not: Number(id) } 
+            },
+        });
+
+        if(existingGenre){
+            res.status(409).send({ message: "Este nome de gênero já existe." });
+        }
+
+        // Atualizando o gênero, assumindo que você tenha campos como 'name' no body da requisição
+        const updatedGenre = await prisma.genre.update({
+            where: { id: Number(id) },
+            data: { name } // Aqui você deve passar o name do gênero
+        });
+
+        res.status(200).send({ message: "Gênero atualizado para ", genre: updatedGenre });
+    } catch (error) {
+        console.error(error);
+        res.status(500).send({ message: "Não foi possível atualizar o gênero do filme.", error });
+    }
+});
 
 
 app.listen(port, () => {
