@@ -1,4 +1,4 @@
-import express, { Application, Request, Response } from 'express';
+import express, { Application, Response, Request } from 'express';
 import { PrismaClient, Prisma } from "@prisma/client";
 import { TitleLanguageGenre } from "../prisma/types";
 import swaggerUi from "swagger-ui-express";
@@ -340,6 +340,89 @@ app.delete("/genres/:id", async (req, res) => {
     }
     res.status(200).send({ message: "Gênero deletado" });
 });
+
+app.get("/movies/sort/:name", async (req, res) => {
+    const sort = req.params.name;
+    console.log(sort);
+    let orderBy:    Prisma.MovieOrderByWithRelationInput | 
+                    Prisma.MovieOrderByWithRelationInput[] | 
+                    undefined;
+    if (sort === "title") {
+        orderBy = {
+            title: "asc",
+        };
+    } else if (sort === "director") {
+        orderBy = {
+            director: "asc"
+        };
+    } else if (sort === "release_date") {
+        orderBy = {
+            release_date: "asc",
+        };
+    }
+
+    try {
+        const movies = await prisma.movie.findMany({
+            orderBy,
+            include: {
+                genres: true,
+                languages: true,
+            },
+        });
+
+        res.json(movies);
+        res.status(200).send({ message: `Listagem por ${sort} bem sucedida` })
+    } catch (error) {
+        console.error(error);
+        res.status(500).send({ message: "Houve um problema ao buscar os filmes." });
+    }
+});
+
+app.get("/movies-view/sort/:name", async (req, res) => {
+    const sort = req.params.name;
+    console.log(sort);
+
+    // Definindo a ordenação de acordo com o parâmetro da URL
+    let orderBy: string = 'id';  // Valor padrão de ordenação
+
+    if (sort === "title") {
+        orderBy = 'title';
+    } else if (sort === "director") {
+        orderBy = 'director';
+    } else if (sort === "release_date") {
+        orderBy = 'release_date';
+    }
+
+    try {
+        // Usando queryRaw para buscar os filmes na view com a ordenação dinâmica
+        const moviesView: TitleLanguageGenre[] = await prisma.$queryRaw<TitleLanguageGenre[]>(
+            Prisma.sql`SELECT * FROM title_language_genre ORDER BY ${Prisma.raw(orderBy)} ASC`
+        );
+
+        // Cálculo da quantidade total de filmes
+        const totalMovies = moviesView.length;
+
+        // Cálculo da média de duração dos filmes
+        let totalDuration = 0;
+        for (const movie of moviesView) {
+            totalDuration += movie.duration;
+        }
+        const averageDuration = totalMovies > 0 ? totalDuration / totalMovies : 0;
+
+        // Respondendo com os dados como JSON
+        res.status(200).json({
+            totalMovies,
+            averageDuration,
+            moviesView,
+        });
+
+        res.status(200).send({ message: `Listagem de filmes bem sucedida` })
+    } catch (error) {
+        console.error("Erro ao consultar a view:", error);
+        res.status(500).json({ error: "Erro interno do servidor" });
+    }
+});
+
 
 app.listen(port, () => {
     console.log(`Servidor em execução na porta ${port}`);
