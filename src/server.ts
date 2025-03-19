@@ -1,4 +1,4 @@
-import express, { Application, Response, Request } from 'express';
+import express, { Application } from 'express';
 import { PrismaClient, Prisma } from "@prisma/client";
 import { TitleLanguageGenre } from "../prisma/types";
 import swaggerUi from "swagger-ui-express";
@@ -290,7 +290,7 @@ app.put("/genres/:id", async (req, res) => {
     }
 });
 
-app.post("/genres", async (req: Request, res: Response) => {
+app.post("/genres", async (req, res) => {
     const { name } = req.body;
 
     if (!name) {
@@ -344,9 +344,9 @@ app.delete("/genres/:id", async (req, res) => {
 app.get("/movies/sort/:name", async (req, res) => {
     const sort = req.params.name;
     console.log(sort);
-    let orderBy:    Prisma.MovieOrderByWithRelationInput | 
-                    Prisma.MovieOrderByWithRelationInput[] | 
-                    undefined;
+    let orderBy: Prisma.MovieOrderByWithRelationInput |
+        Prisma.MovieOrderByWithRelationInput[] |
+        undefined;
     if (sort === "title") {
         orderBy = {
             title: "asc",
@@ -419,6 +419,60 @@ app.get("/movies-view/sort/:name", async (req, res) => {
         res.status(200).send({ message: `Listagem de filmes bem sucedida` })
     } catch (error) {
         console.error("Erro ao consultar a view:", error);
+        res.status(500).json({ error: "Erro interno do servidor" });
+    }
+});
+
+app.get("/movies/lang/:language", async (req, res) => {
+    const { language } = req.params;
+
+    try {
+        const movies = await prisma.movie.findMany({
+            where: {
+                languages: {
+                    name: {
+                        equals: language,
+                        mode: "insensitive",
+                    },
+                },
+            },
+            include: {
+                genres: true,
+                languages: true,
+            },
+        });
+
+        res.status(200).json(movies);
+    } catch (error) {
+        console.error(error);
+        res.status(500).send({ message: "Houve um problema ao buscar os filmes." });
+    }
+});
+
+app.get("/movies-view/lang/:languageName", async (req, res) => {
+    try {
+        const languageName = req.params.languageName;
+
+        // Consulta SQL diretamente na view, com filtro pelo nome do idioma
+        const moviesByLanguage: TitleLanguageGenre[] = await prisma.$queryRaw<
+            TitleLanguageGenre[]
+        >(Prisma.sql`
+            SELECT * 
+            FROM title_language_genre
+            WHERE language_name ILIKE ${languageName} 
+            ORDER BY id ASC
+        `);
+
+        // Validar se encontrou filmes
+        if (moviesByLanguage.length === 0) {
+            res.status(404).send({ message: "Nenhum filme encontrado para a língua informada!" });
+            return;
+        }
+
+        // Retornar os filmes filtrados
+        res.json(moviesByLanguage);
+    } catch (error) {
+        console.error("Erro ao consultar a view com filtro de língua:", error);
         res.status(500).json({ error: "Erro interno do servidor" });
     }
 });
